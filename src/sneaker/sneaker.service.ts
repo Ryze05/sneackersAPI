@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Sneaker } from './entities/sneaker.entity';
 import { Model } from 'mongoose';
 import { PaginationSneakerDto } from './dto/pagination-sneaker.dto';
-import { PaginatedResponse } from 'src/common/interfaces/pagination.interface';
+import { PaginatedResponse } from '../common/interfaces/pagination.interface';
 
 @Injectable()
 export class SneakerService {
