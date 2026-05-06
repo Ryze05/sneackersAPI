@@ -3,10 +3,11 @@ import { CreateSneakerDto } from './dto/create-sneaker.dto';
 import { UpdateSneakerDto } from './dto/update-sneaker.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sneaker } from './entities/sneaker.entity';
-import { isValidObjectId, Model, SortOrder } from 'mongoose';
+import { Document, HydratedDocument, isValidObjectId, Model, SortOrder } from 'mongoose';
 import { PaginationSneakerDto } from './dto/pagination-sneaker.dto';
 import { PaginatedResponse } from '../common/interfaces/pagination.interface';
 import { SneakerFilters } from './interfaces/sneaker-filters.interface';
+import { SNEAKERS_SEED_DATA } from './data/sneaker.data';
 
 @Injectable()
 export class SneakerService {
@@ -31,7 +32,7 @@ export class SneakerService {
 
     const { limit = 10, offset = 0, model, brand, color, size, minPrice, maxPrice, isLimitedEdition, sortBy = 'price', sortOrder = 'asc' } = paginationSneakerDto;
 
-    const query: SneakerFilters = {};
+    const query: SneakerFilters = { isActive: true };
 
     if (model) query.model = { $regex: model, $options: 'i' };
 
@@ -53,7 +54,7 @@ export class SneakerService {
     // Ordenación dinámica
     const key = ['brand', 'model', 'size', 'price'].includes(sortBy) ? sortBy : 'price';
     const value = (sortOrder === 'desc') ? -1 : 1;
-    const sort: { [key: string]: SortOrder } = { [key] :  value};
+    const sort: { [key: string]: SortOrder } = { [key]: value };
 
     const [sneakers, total] = await Promise.all([
       this.sneakerModel.find(query).limit(limit).skip(offset).sort(sort).exec(),
@@ -77,29 +78,73 @@ export class SneakerService {
     };
   }
 
-  async findOne(term: string): Promise<Sneaker> {
+  async findOne(term: string): Promise<HydratedDocument<Sneaker>> {
 
-    let sneacker: Sneaker | null = null;
-  
+    let sneaker:  HydratedDocument<Sneaker> | null = null;
+
     if (isValidObjectId(term)) {
-      sneacker = await this.sneakerModel.findById(term);
+      sneaker = await this.sneakerModel.findOne({ _id: term, isActive: true });
     }
 
-    if (!sneacker) {
-      sneacker = await this.sneakerModel.findOne({sku: term}); 
+    if (!sneaker) {
+      sneaker = await this.sneakerModel.findOne({ sku: term.toUpperCase().trim(), isActive: true });
     }
 
-    if (!sneacker) throw new NotFoundException();
+    if (!sneaker) {
+      sneaker = await this.sneakerModel.findOne({
+        model: {
+          $regex: term.trim(),
+          $options: 'i'
+        },
+        isActive: true
+      }).sort({ price: -1 })
+    }
 
-    return sneacker
+    if (!sneaker) {
+      throw new NotFoundException(`Sneaker with id, sku or model "${term}" not found`);
+    }
+
+    return sneaker;
   }
 
-  update(term: string, updateSneakerDto: UpdateSneakerDto) {
-    return `This action updates a #${term} sneaker`;
+  async update(term: string, updateSneakerDto: UpdateSneakerDto): Promise<Sneaker> {
+    const sneaker: HydratedDocument<Sneaker> = await this.findOne(term);
+
+    if (updateSneakerDto.sku) updateSneakerDto.sku = updateSneakerDto.sku.toUpperCase();
+
+    try {
+      const updatedSneaker = await this.sneakerModel.findByIdAndUpdate(sneaker._id, updateSneakerDto, {new: true})
+      return updatedSneaker!;
+    } catch(error) {
+      this.handleException(error);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} sneaker`;
+  async remove(term: string): Promise<{message: string}> {
+    const sneaker: HydratedDocument<Sneaker> = await this.findOne(term);
+    try {
+      // SOFT DELETE
+      await this.sneakerModel.findByIdAndUpdate(sneaker._id, { isActive: false })
+      //await this.sneakerModel.findByIdAndDelete(sneaker._id)
+      return {
+        message: `Sneaker with ${term} has been deactivated`,
+      }
+    } catch(error) {
+      this.handleException(error);
+    }
+  }
+
+  async runSeed(): Promise<{message: string, itemsInserted: number}> {
+    try {
+      await this.sneakerModel.deleteMany()
+      await this.sneakerModel.insertMany(SNEAKERS_SEED_DATA)
+      return {
+        message: 'Seed executed successfully',
+        itemsInserted: SNEAKERS_SEED_DATA.length
+      }
+    } catch(error) {
+      this.handleException(error);
+    }
   }
 
   private handleException(error: any): never {

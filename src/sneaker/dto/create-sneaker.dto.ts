@@ -46,13 +46,4 @@ export class CreateSneakerDto {
         return value;
     })
     isLimitedEdition?: boolean;
-
-    @IsBoolean()
-    @IsOptional()
-    @Transform(({value}) => {
-        if (['true', true, 1, '1'].includes(value)) return true;
-        if (['false', false, 0, '0'].includes(value)) return false; 
-        return value;
-    })
-    isActive?: boolean;
 }

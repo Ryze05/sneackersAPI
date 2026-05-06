@@ -13,5 +13,6 @@ export interface SneakerFilters {
     price?: {
         $gte?: number,
         $lte?: number
-    }
+    },
+    isActive: boolean
 }
