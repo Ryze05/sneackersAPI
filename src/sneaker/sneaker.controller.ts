@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { SneakerService } from './sneaker.service';
 import { CreateSneakerDto } from './dto/create-sneaker.dto';
 import { UpdateSneakerDto } from './dto/update-sneaker.dto';
-import { PaginationSneakerDto } from './dto/pagination-sneaker.dto';
+import { QuerySneakerDto } from './dto/query-sneaker.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('sneakers')
@@ -21,7 +21,7 @@ export class SneakerController {
   @Get()
   @ApiOperation({summary: 'Get paginated list of sneakers.'})
   @ApiResponse({ status: 200, description: 'List of sneakers returned.' })
-  findAll(@Query() paginationSneakerDto: PaginationSneakerDto) {
+  findAll(@Query() paginationSneakerDto: QuerySneakerDto) {
     return this.sneakerService.findAll(paginationSneakerDto);
   }
 

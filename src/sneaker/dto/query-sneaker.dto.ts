@@ -1,20 +1,9 @@
 import { Transform, Type } from "class-transformer";
 import { IsBoolean, IsEnum, IsLowercase, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { PaginationDto } from "../../common/dto/pagination.dto";
 
-export class PaginationSneakerDto {
-
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Type(() => Number)
-    limit?: number;
-
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    @Type(() => Number)
-    offset?: number;
-
+export class QuerySneakerDto extends PaginationDto {
+    
     @IsOptional()
     @IsString()
     model?: string;

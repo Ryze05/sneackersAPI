@@ -3,8 +3,8 @@ import { CreateSneakerDto } from './dto/create-sneaker.dto';
 import { UpdateSneakerDto } from './dto/update-sneaker.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sneaker } from './entities/sneaker.entity';
-import { Document, HydratedDocument, isValidObjectId, Model, SortOrder } from 'mongoose';
-import { PaginationSneakerDto } from './dto/pagination-sneaker.dto';
+import { HydratedDocument, isValidObjectId, Model, SortOrder } from 'mongoose';
+import { QuerySneakerDto } from './dto/query-sneaker.dto';
 import { PaginatedResponse } from '../common/interfaces/pagination.interface';
 import { SneakerFilters } from './interfaces/sneaker-filters.interface';
 import { SNEAKERS_SEED_DATA } from './data/sneaker.data';
@@ -28,9 +28,9 @@ export class SneakerService {
     }
   }
 
-  async findAll(paginationSneakerDto: PaginationSneakerDto): Promise<PaginatedResponse<Sneaker>> {
+  async findAll(querySneaker: QuerySneakerDto): Promise<PaginatedResponse<Sneaker>> {
 
-    const { limit = 10, offset = 0, model, brand, color, size, minPrice, maxPrice, isLimitedEdition, sortBy = 'price', sortOrder = 'asc' } = paginationSneakerDto;
+    const { limit = 10, offset = 0, model, brand, color, size, minPrice, maxPrice, isLimitedEdition, sortBy = 'price', sortOrder = 'asc' } = querySneaker;
 
     const query: SneakerFilters = { isActive: true };
 
