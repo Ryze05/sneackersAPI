@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SneakerModule } from './sneaker/sneaker.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EnvConfig } from './common/config/env.config';
@@ -15,7 +15,17 @@ import { SeedModule } from './seed/seed.module';
       envFilePath: process.env.NODE_ENV === 'prod' ? '.env.prod' : '.env'
     }),
     SneakerModule,
-    MongooseModule.forRoot(process.env.MONGO_URL!),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGO_URL');
+        
+        return {
+          uri
+        }
+      }
+    }),
     SeedModule
   ],
   controllers: [],
