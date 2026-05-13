@@ -1,7 +1,8 @@
 import { Transform } from "class-transformer";
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
+import { PaginationDto } from "../../common/dto/pagination.dto";
 
-export class QueryBrandDto {
+export class QueryBrandDto extends PaginationDto {
     
     @IsOptional()
     @IsString()
@@ -9,12 +10,18 @@ export class QueryBrandDto {
     name?: string;
 
     @IsOptional()
-    @IsBoolean()
-    @Transform(({ value }) => {
-        if ([true, 'true', 1, '1'].includes(value)) return true;
-        if ([false, 'false', 0, '0'].includes(value)) return false;
-
-        return value;
+    @IsString()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLocaleLowerCase() : value))
+    @IsEnum(['asc','desc'], {
+        message: `sortOrder must have the following values: [asc, desc]`
     })
-    isActive?: boolean;
+    sortOrder?: string;
+
+    @IsOptional()
+    @IsString()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLocaleLowerCase() : value))
+    @IsEnum(['name', 'createdAt'], {
+        message: `sortOrder must have the following values: [name, createdAt]`
+    })
+    sortBy?: string
 }

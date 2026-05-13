@@ -6,21 +6,24 @@ export class Sneaker {
     @Prop({
         index: true,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        required: true
     })
     model!: string
 
     @Prop({
         index: true,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        required: true
     })
     brand!: string
 
     @Prop({
         unique: true,
         index: true,
-        uppercase: true
+        uppercase: true,
+        required: true
     })
     sku!: string
 
@@ -34,7 +37,8 @@ export class Sneaker {
     @Prop({
         index: true,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        required: true
     })
     color!: string
 

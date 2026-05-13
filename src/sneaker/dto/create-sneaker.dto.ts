@@ -7,7 +7,7 @@ export class CreateSneakerDto {
     @ApiProperty({ example: 'NIKE-1234', description: 'Unique SKU code' })
     @IsString()
     @IsNotEmpty()
-    @IsUppercase()
+    @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase().trim() : value))
     @Matches(/^[A-Z]{3,10}-\d{4}$/, {
         message: `The SKU is invalid. It must be in the format BRAND-0000 (e.g., NIKE-1234)`
     })
@@ -16,18 +16,18 @@ export class CreateSneakerDto {
     @ApiProperty({ example: 'air force 1' })
     @IsString()
     @IsNotEmpty()
-    @IsLowercase()
+    @Transform(({ value }) => (typeof value === 'string' ? value.toLocaleLowerCase().trim() : value))
     model!: string;
 
     @ApiProperty({ example: 'nike' })
     @IsString()
     @IsNotEmpty()
-    @IsLowercase()
+    @Transform(({ value }) => (typeof value === 'string' ? value.toLocaleLowerCase().trim() : value))
     brand!: string;
 
     @ApiProperty({ example: 42 })
     @IsNumber()
-    @IsNotEmpty()
+    @IsOptional()
     @Min(0)
     @Type(() => Number)
     size!: number;
@@ -35,12 +35,12 @@ export class CreateSneakerDto {
     @ApiProperty({ example: 'white' })
     @IsString()
     @IsNotEmpty()
-    @IsLowercase()
+    @Transform(({ value }) => (typeof value === 'string' ? value.toLocaleLowerCase().trim() : value))
     color!: string;
 
     @ApiProperty({ example: 110.99 })
     @IsNumber()
-    @IsNotEmpty()
+    @IsOptional()
     @Min(0)
     @Type(() => Number)
     price!: number;

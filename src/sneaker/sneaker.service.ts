@@ -11,7 +11,7 @@ import { SneakerFilters } from './interfaces/sneaker-filters.interface';
 @Injectable()
 export class SneakerService {
 
-  private readonly logger = new Logger('SneackerService');
+  private readonly logger = new Logger('SneakerService');
 
   constructor(
     @InjectModel(Sneaker.name)
@@ -52,7 +52,7 @@ export class SneakerService {
     }
 
     // Ordenación dinámica
-    const key = ['brand', 'model', 'size', 'price'].includes(sortBy) ? sortBy : 'price';
+    const key = ['brand', 'model', 'size', 'price', 'createdAt'].includes(sortBy) ? sortBy : 'createdAt';
     const value = (sortOrder === 'desc') ? -1 : 1;
     const sort: { [key: string]: SortOrder } = { [key]: value };
 
@@ -61,7 +61,7 @@ export class SneakerService {
       this.sneakerModel.countDocuments(query)
     ])
 
-    const lastPage = Math.ceil(total / limit);
+    const lastPage = Math.ceil(total / limit) || 1;
     const currentPage = Math.floor(offset / limit) + 1;
 
     if (currentPage > lastPage && total > 0) {
@@ -83,7 +83,7 @@ export class SneakerService {
     let sneaker:  HydratedDocument<Sneaker> | null = null;
 
     if (isValidObjectId(term)) {
-      sneaker = await this.sneakerModel.findOne({ _id: term, isActive: true });
+      sneaker = await this.sneakerModel.findOne({ _id: term ,isActive: true });
     }
 
     if (!sneaker) {
@@ -110,11 +110,12 @@ export class SneakerService {
   async update(term: string, updateSneakerDto: UpdateSneakerDto): Promise<Sneaker> {
     const sneaker: HydratedDocument<Sneaker> = await this.findOne(term);
 
-    if (updateSneakerDto.sku) updateSneakerDto.sku = updateSneakerDto.sku.toUpperCase();
+    //if (updateSneakerDto.sku) updateSneakerDto.sku = updateSneakerDto.sku.toUpperCase();
 
     try {
-      const updatedSneaker = await this.sneakerModel.findByIdAndUpdate(sneaker._id, updateSneakerDto, {new: true})
-      return updatedSneaker!;
+      sneaker.set(updateSneakerDto);
+      await sneaker.save();
+      return sneaker;
     } catch(error) {
       this.handleException(error);
     }
@@ -124,7 +125,8 @@ export class SneakerService {
     const sneaker: HydratedDocument<Sneaker> = await this.findOne(term);
     try {
       // SOFT DELETE
-      await this.sneakerModel.findByIdAndUpdate(sneaker._id, { isActive: false })
+      sneaker.isActive = false;
+      await sneaker.save();
       //await this.sneakerModel.findByIdAndDelete(sneaker._id)
       return {
         message: `Sneaker with ${term} has been deactivated`,

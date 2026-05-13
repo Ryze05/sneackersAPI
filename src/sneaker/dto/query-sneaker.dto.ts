@@ -36,10 +36,15 @@ export class QuerySneakerDto extends PaginationDto {
 
     @IsOptional()
     @IsString()
-    @IsLowercase()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLocaleLowerCase() : value))
+    @IsEnum(['brand', 'model', 'size', 'price'], {
+        message: `sortOrder must have the following values: ['brand', 'model', 'size', 'price']`
+    })
     sortBy?: string = 'price'
 
     @IsOptional()
+    @IsString()
+    @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLocaleLowerCase() : value))
     @IsEnum(['asc', 'desc'], {
         message: `sortOrder must have the following values: [asc, desc]`
     })

@@ -1,9 +1,12 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Brand } from './entities/brand.entity';
-import { HydratedDocument, isValidObjectId, Model } from 'mongoose';
+import { HydratedDocument, isValidObjectId, Model, SortOrder } from 'mongoose';
+import { QueryBrandDto } from './dto/query-brand.dto';
+import { BrandFilters } from './interfaces/brand-filters.interface';
+import { PaginatedResponse } from '../common/interfaces/pagination.interface';
 
 @Injectable()
 export class BrandService {
@@ -25,8 +28,40 @@ export class BrandService {
     }
   }
 
-  async findAll() {
-    return await this.brandModel.find();
+  async findAll(queryBrandDto: QueryBrandDto): Promise<PaginatedResponse<Brand>> {
+    
+    const { limit = 10, offset = 0, name, sortOrder = 'desc', sortBy = 'createdAt' } = queryBrandDto;
+
+    const query: BrandFilters = {isActive: true};
+
+    if (name) query.name = { $regex: name, $options: 'i' };
+
+    const key = ['name', 'createdAt'].includes(sortBy) ? sortBy : 'createdAt';
+
+    const order: SortOrder = (sortOrder === 'desc') ? -1 : 1;
+
+    const sort: {[key: string]: SortOrder} = {[key]: order};
+
+    const [total, data] = await Promise.all([
+      this.brandModel.countDocuments(query),
+      this.brandModel.find(query).limit(limit).skip(offset).sort(sort)
+    ]);
+
+    const currentPage = Math.floor(offset/limit) + 1;
+    const lastPage = Math.ceil(total / limit) || 1;
+
+    if (currentPage > lastPage && total > 0) {
+      throw new BadRequestException(`The page ${currentPage} does not exist. The last page is ${lastPage}.`);
+    }
+    
+    return {
+      data,
+      total,
+      limit,
+      offset,
+      currentPage,
+      lastPage
+    };
   }
 
   async findOne(term: string): Promise<HydratedDocument<Brand>>{
@@ -34,9 +69,10 @@ export class BrandService {
     let brand: HydratedDocument<Brand> | null = null; 
     
     if (isValidObjectId(term)) {
-      brand = await this.brandModel.findById(term)
+      brand = await this.brandModel.findOne({ _id: term, isActive: true })
     }
 
+    //! Change
     if (!brand) {
       brand = await this.brandModel.findOne({
         name: {
@@ -47,7 +83,7 @@ export class BrandService {
     }
 
     if (!brand) {
-      throw new BadRequestException(`Brand with id or name "${term}" not found`)
+      throw new NotFoundException(`Brand with id or name "${term}" not found`)
     }
 
     return brand;
@@ -56,9 +92,9 @@ export class BrandService {
   async update(term: string, updateBrandDto: UpdateBrandDto): Promise<Brand> {
     const brand = await this.findOne(term);
     try {
-      brand.set(updateBrandDto)
-      await brand.save()
-      return brand
+      brand.set(updateBrandDto);
+      await brand.save();
+      return brand;
     } catch(error) {
       this.handleException(error);
     }
@@ -68,9 +104,9 @@ export class BrandService {
     const brand = await this.findOne(term)
   
     try {
-      await brand.updateOne({
-        isActive: false
-      });
+      brand.isActive = false;
+      await brand.save();
+
       return {
         message: `brand with name "${brand.name}" has been deactivated`
       }
@@ -81,7 +117,7 @@ export class BrandService {
 
   private handleException(error: any): never {
 
-    if (error.code === 11000) throw new BadRequestException(`Sneaker already exists in DB: ${JSON.stringify(error.keyValue)}`);
+    if (error.code === 11000) throw new BadRequestException(`Brand already exists in DB: ${JSON.stringify(error.keyValue)}`);
 
     this.logger.error(error);
 
